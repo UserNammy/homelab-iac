@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: services
+  namespace: homelab
+  author: UserNam
+  description: Deploys the docker compose stacks found under services/ to /opt/stacks.
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - noble
+  galaxy_tags:
+    - docker
+    - compose
+
+dependencies: []

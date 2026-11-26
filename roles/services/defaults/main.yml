@@ -1,0 +1,15 @@
+---
+# Directory on the controller holding one folder per stack (services/<name>).
+services_source_dir: "{{ role_path }}/../../services"
+# Where stacks are deployed on the host: /opt/stacks/<name>.
+services_base_dir: /opt/stacks
+# Stacks to deploy on this host (set in host_vars).
+services_stacks: []
+# Passed to `docker compose up --pull`: missing | always | never.
+services_pull: missing
+
+# Values available to the templates under services/.
+services_domain: example.com
+services_grafana_admin_password: ""
+services_vaultwarden_admin_token: ""
+services_alertmanager_discord_webhook_url: ""

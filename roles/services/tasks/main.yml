@@ -1,0 +1,22 @@
+---
+- name: Assert every requested stack exists in the repository
+  ansible.builtin.assert:
+    that:
+      - (services_source_dir ~ '/' ~ item ~ '/compose.yaml') is file
+    fail_msg: "No compose.yaml found for stack '{{ item }}' in {{ services_source_dir }}"
+    quiet: true
+  loop: "{{ services_stacks }}"
+
+- name: Create the stacks base directory
+  ansible.builtin.file:
+    path: "{{ services_base_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Deploy each stack
+  ansible.builtin.include_tasks: stack.yml
+  loop: "{{ services_stacks }}"
+  loop_control:
+    loop_var: services_stack

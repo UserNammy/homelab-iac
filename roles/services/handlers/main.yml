@@ -1,0 +1,7 @@
+---
+# Old image versions pile up after every tag bump; drop the dangling ones.
+- name: Prune dangling images
+  community.docker.docker_prune:
+    images: true
+    images_filters:
+      dangling: true

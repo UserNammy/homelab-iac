@@ -1,0 +1,55 @@
+---
+# Mirrors services/<stack>/ to /opt/stacks/<stack>/: *.j2 files are rendered
+# (without the extension), everything else is copied as-is.
+- name: Deploy stack {{ services_stack }}
+  vars:
+    services_stack_dir: "{{ services_base_dir }}/{{ services_stack }}"
+    services_stack_tree: "{{ query('community.general.filetree', services_source_dir ~ '/' ~ services_stack) }}"
+  block:
+    - name: Create the stack directories
+      ansible.builtin.file:
+        path: "{{ services_stack_dir }}/{{ item.path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+      loop: "{{ [{'path': ''}] + (services_stack_tree | selectattr('state', 'eq', 'directory') | list) }}"
+      loop_control:
+        label: "{{ services_stack }}/{{ item.path }}"
+
+    - name: Copy static files
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ services_stack_dir }}/{{ item.path }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop: "{{ services_stack_tree | selectattr('state', 'eq', 'file') | rejectattr('path', 'search', '\\.j2$') | list }}"
+      loop_control:
+        label: "{{ services_stack }}/{{ item.path }}"
+      register: services_static_files
+
+    # .env files hold secrets: 0600 and no diff output.
+    - name: Render templates
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ services_stack_dir }}/{{ item.path | regex_replace('\\.j2$', '') }}"
+        owner: root
+        group: root
+        mode: "{{ '0600' if (item.path | basename) == '.env.j2' else '0644' }}"
+      loop: "{{ services_stack_tree | selectattr('state', 'eq', 'file') | selectattr('path', 'search', '\\.j2$') | list }}"
+      loop_control:
+        label: "{{ services_stack }}/{{ item.path }}"
+      register: services_rendered_files
+      diff: false
+
+    # Most images only read their config at start-up, so any config change
+    # recreates the stack's containers. Simple and predictable for a homelab.
+    - name: Bring the stack up
+      community.docker.docker_compose_v2:
+        project_src: "{{ services_stack_dir }}"
+        state: present
+        pull: "{{ services_pull }}"
+        remove_orphans: true
+        recreate: "{{ 'always' if (services_static_files is changed or services_rendered_files is changed) else 'auto' }}"
+      notify: Prune dangling images
