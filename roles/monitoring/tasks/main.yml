@@ -1,0 +1,87 @@
+---
+- name: Create the node_exporter system group
+  ansible.builtin.group:
+    name: node_exporter
+    system: true
+    state: present
+
+- name: Create the node_exporter system user
+  ansible.builtin.user:
+    name: node_exporter
+    group: node_exporter
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+    state: present
+
+- name: Create the install directory
+  ansible.builtin.file:
+    path: "{{ monitoring_node_exporter_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create the textfile collector directory
+  ansible.builtin.file:
+    path: "{{ monitoring_node_exporter_textfile_dir }}"
+    state: directory
+    owner: root
+    group: node_exporter
+    mode: "0755"
+
+# The checksum is read from the release's sha256sums.txt, so a tampered or
+# truncated download fails here instead of being installed.
+- name: Download the node_exporter release
+  ansible.builtin.get_url:
+    url: "{{ monitoring_node_exporter_base_url }}/{{ monitoring_node_exporter_release }}.tar.gz"
+    dest: "{{ monitoring_node_exporter_install_dir }}/{{ monitoring_node_exporter_release }}.tar.gz"
+    checksum: "sha256:{{ monitoring_node_exporter_base_url }}/sha256sums.txt"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Extract the node_exporter release
+  ansible.builtin.unarchive:
+    src: "{{ monitoring_node_exporter_install_dir }}/{{ monitoring_node_exporter_release }}.tar.gz"
+    dest: "{{ monitoring_node_exporter_install_dir }}"
+    remote_src: true
+    owner: root
+    group: root
+    creates: "{{ monitoring_node_exporter_install_dir }}/{{ monitoring_node_exporter_release }}/node_exporter"
+
+# Upgrading = bump the version; the symlink switch triggers a restart and the
+# previous release stays on disk for a quick rollback.
+- name: Link the active node_exporter binary
+  ansible.builtin.file:
+    src: "{{ monitoring_node_exporter_install_dir }}/{{ monitoring_node_exporter_release }}/node_exporter"
+    dest: /usr/local/bin/node_exporter
+    state: link
+    force: true
+  notify: Restart node_exporter
+
+- name: Install the node_exporter systemd unit
+  ansible.builtin.template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart node_exporter
+
+- name: Allow Prometheus to scrape node_exporter
+  community.general.ufw:
+    rule: allow
+    port: "{{ monitoring_node_exporter_port | string }}"
+    proto: tcp
+    from_ip: "{{ item }}"
+    comment: node_exporter
+  loop: "{{ monitoring_node_exporter_allowed_sources }}"
+  when: monitoring_manage_ufw
+
+- name: Ensure node_exporter is enabled and running
+  ansible.builtin.systemd_service:
+    name: node_exporter
+    enabled: true
+    state: started
+    daemon_reload: true

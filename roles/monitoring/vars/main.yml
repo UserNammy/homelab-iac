@@ -1,0 +1,9 @@
+---
+monitoring_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+  armv7l: armv7
+monitoring_node_exporter_arch: "{{ monitoring_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"
+monitoring_node_exporter_release: "node_exporter-{{ monitoring_node_exporter_version }}.linux-{{ monitoring_node_exporter_arch }}"
+monitoring_node_exporter_base_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ monitoring_node_exporter_version }}"
+monitoring_node_exporter_install_dir: /opt/node_exporter

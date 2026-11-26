@@ -1,0 +1,15 @@
+---
+monitoring_node_exporter_version: "1.9.1"
+monitoring_node_exporter_listen_address: "0.0.0.0"
+monitoring_node_exporter_port: 9100
+# Directory read by the textfile collector. Other roles (backup) drop *.prom
+# files here to expose their own metrics.
+monitoring_node_exporter_textfile_dir: /var/lib/node_exporter/textfile
+monitoring_node_exporter_extra_flags:
+  - --collector.systemd
+  - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|var/lib/docker/.+)($$|/)
+
+# Open the port in ufw for these sources only (Prometheus server, docker
+# bridge on the monitoring host). Set to false if ufw is not used.
+monitoring_manage_ufw: true
+monitoring_node_exporter_allowed_sources: []

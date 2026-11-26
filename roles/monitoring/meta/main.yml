@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: monitoring
+  namespace: homelab
+  author: UserNam
+  description: Prometheus node_exporter as a sandboxed systemd service, with a textfile collector directory.
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - noble
+  galaxy_tags:
+    - monitoring
+    - prometheus
+
+dependencies: []

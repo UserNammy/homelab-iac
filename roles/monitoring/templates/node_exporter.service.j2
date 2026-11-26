@@ -1,0 +1,32 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Prometheus node_exporter
+Documentation=https://github.com/prometheus/node_exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=node_exporter
+Group=node_exporter
+ExecStart=/usr/local/bin/node_exporter \
+    --web.listen-address={{ monitoring_node_exporter_listen_address }}:{{ monitoring_node_exporter_port }} \
+    --collector.textfile.directory={{ monitoring_node_exporter_textfile_dir }}{% for flag in monitoring_node_exporter_extra_flags %} \
+    {{ flag }}{% endfor %}
+
+Restart=on-failure
+RestartSec=5s
+
+# Sandboxing: node_exporter only needs to read /proc, /sys and D-Bus.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
