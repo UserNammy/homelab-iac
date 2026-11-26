@@ -1,6 +1,6 @@
 # homelab-iac
 
-[![CI](https://github.com/OWNER/homelab-iac/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/homelab-iac/actions/workflows/ci.yml)
+[![CI](https://github.com/UserNammy/homelab-iac/actions/workflows/ci.yml/badge.svg)](https://github.com/UserNammy/homelab-iac/actions/workflows/ci.yml)
 ![Ansible](https://img.shields.io/badge/ansible--core-2.16%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
