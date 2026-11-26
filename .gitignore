@@ -1,0 +1,37 @@
+# --- Secrets: never commit these -------------------------------------------
+# Real vault file (encrypted or not). Only vault.example.yml is tracked.
+inventory/group_vars/all/vault.yml
+inventory/host_vars/*/vault.yml
+.vault_pass
+.vault_pass.txt
+*.vault_pass
+.env
+
+# SSH keys that might end up here by accident
+id_rsa*
+id_ed25519*
+*.pem
+*.key
+
+# --- Python / tooling ------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+.cache/
+.ansible/
+
+# --- Ansible runtime artefacts ---------------------------------------------
+*.retry
+fact_cache/
+collections/ansible_collections/
+
+# --- Molecule ---------------------------------------------------------------
+.molecule/
+
+# --- Editors / OS -----------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

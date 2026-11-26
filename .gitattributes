@@ -1,0 +1,4 @@
+# Keep LF line endings everywhere: these files end up on Linux hosts.
+* text=auto eol=lf
+*.sh text eol=lf
+*.j2 text eol=lf

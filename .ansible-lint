@@ -1,0 +1,14 @@
+---
+# https://ansible.readthedocs.io/projects/lint/configuring/
+profile: production
+
+exclude_paths:
+  - .cache/
+  - .venv/
+  - collections/
+  # docker compose stacks and their config files are plain YAML/templates,
+  # yamllint covers them.
+  - services/
+
+warn_list:
+  - experimental

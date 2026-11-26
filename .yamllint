@@ -1,0 +1,28 @@
+---
+# Settings kept compatible with what ansible-lint expects from yamllint.
+extends: default
+
+ignore: |
+  .venv/
+  .cache/
+  .ansible/
+  collections/
+
+rules:
+  line-length:
+    max: 160
+    level: warning
+  truthy:
+    allowed-values: ["true", "false"]
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
