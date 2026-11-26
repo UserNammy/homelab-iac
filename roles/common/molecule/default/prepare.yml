@@ -1,0 +1,14 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+    # On a real host sshd is already running and owns this directory; in a
+    # fresh container `sshd -t` (used to validate the drop-in) needs it.
+    - name: Create the sshd privilege separation directory
+      ansible.builtin.file:
+        path: /run/sshd
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"

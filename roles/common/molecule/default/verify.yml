@@ -1,0 +1,95 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    # --- SSH ------------------------------------------------------------------
+    - name: Dump the effective sshd configuration
+      ansible.builtin.command: /usr/sbin/sshd -T
+      register: verify_sshd
+      changed_when: false
+
+    - name: Assert SSH hardening is effective
+      ansible.builtin.assert:
+        that:
+          - "'permitrootlogin no' in verify_sshd.stdout_lines"
+          - "'passwordauthentication no' in verify_sshd.stdout_lines"
+          - "'kbdinteractiveauthentication no' in verify_sshd.stdout_lines"
+          - "'maxauthtries 3' in verify_sshd.stdout_lines"
+          - "'allowgroups sshusers' in verify_sshd.stdout_lines"
+          - "'x11forwarding no' in verify_sshd.stdout_lines"
+
+    # --- Users ----------------------------------------------------------------
+    - name: Read group membership of the admin user
+      ansible.builtin.command: id -nG molecule
+      register: verify_groups
+      changed_when: false
+
+    - name: Assert the admin user is in sudo and sshusers
+      ansible.builtin.assert:
+        that:
+          - "'sudo' in verify_groups.stdout.split()"
+          - "'sshusers' in verify_groups.stdout.split()"
+
+    - name: Stat the authorized_keys file
+      ansible.builtin.stat:
+        path: /home/molecule/.ssh/authorized_keys
+      register: verify_keys
+
+    - name: Assert authorized_keys exists with strict permissions
+      ansible.builtin.assert:
+        that:
+          - verify_keys.stat.exists
+          - verify_keys.stat.mode == '0600'
+          - verify_keys.stat.pw_name == 'molecule'
+
+    - name: Validate the sudoers configuration
+      ansible.builtin.command: /usr/sbin/visudo -c
+      changed_when: false
+
+    # --- Firewall -------------------------------------------------------------
+    - name: Read ufw status
+      ansible.builtin.command: ufw status verbose
+      register: verify_ufw
+      changed_when: false
+
+    - name: Assert ufw is active with a default deny policy
+      ansible.builtin.assert:
+        that:
+          - "'Status: active' in verify_ufw.stdout"
+          - "'deny (incoming)' in verify_ufw.stdout"
+          - "'22/tcp' in verify_ufw.stdout"
+          - "'443/tcp' in verify_ufw.stdout"
+
+    # --- fail2ban -------------------------------------------------------------
+    - name: Query the fail2ban sshd jail
+      ansible.builtin.command: fail2ban-client status sshd
+      register: verify_f2b
+      changed_when: false
+
+    - name: Assert the sshd jail is loaded
+      ansible.builtin.assert:
+        that:
+          - "'Status for the jail: sshd' in verify_f2b.stdout"
+
+    # --- unattended-upgrades --------------------------------------------------
+    - name: Read the periodic apt configuration
+      ansible.builtin.slurp:
+        src: /etc/apt/apt.conf.d/20auto-upgrades
+      register: verify_apt_periodic
+
+    - name: Assert unattended-upgrades is enabled
+      ansible.builtin.assert:
+        that:
+          - "'APT::Periodic::Unattended-Upgrade \"1\";' in (verify_apt_periodic.content | b64decode)"
+
+    # --- Timezone -------------------------------------------------------------
+    - name: Read /etc/timezone
+      ansible.builtin.slurp:
+        src: /etc/timezone
+      register: verify_tz
+
+    - name: Assert the timezone is applied
+      ansible.builtin.assert:
+        that:
+          - (verify_tz.content | b64decode | trim) == 'Europe/Paris'
