@@ -1,0 +1,9 @@
+// {{ ansible_managed }}
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "{{ common_unattended_upgrades_auto_reboot | bool | lower }}";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ common_unattended_upgrades_reboot_time }}";
+{% if common_unattended_upgrades_mail | length > 0 %}
+Unattended-Upgrade::Mail "{{ common_unattended_upgrades_mail }}";
+Unattended-Upgrade::MailReport "on-change";
+{% endif %}

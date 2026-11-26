@@ -1,0 +1,27 @@
+---
+- name: Update the apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: "{{ common_base_packages }}"
+    state: present
+
+# Done with plain files instead of timedatectl so it also works in
+# containers (Molecule) where systemd-timedated is not available.
+- name: Point /etc/localtime at the configured zone
+  ansible.builtin.file:
+    src: "/usr/share/zoneinfo/{{ common_timezone }}"
+    dest: /etc/localtime
+    state: link
+    force: true
+
+- name: Write /etc/timezone
+  ansible.builtin.copy:
+    content: "{{ common_timezone }}\n"
+    dest: /etc/timezone
+    owner: root
+    group: root
+    mode: "0644"

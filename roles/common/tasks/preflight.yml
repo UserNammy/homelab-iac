@@ -1,0 +1,19 @@
+---
+- name: Assert the target runs a supported distribution
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] == 'Debian'
+    fail_msg: "The common role supports Debian and Ubuntu only (found {{ ansible_facts['distribution'] }})."
+    quiet: true
+
+# AllowGroups is applied below. If the account Ansible connects with is not
+# managed here, the next SSH connection would be refused.
+- name: Assert the connecting user keeps SSH access after hardening
+  ansible.builtin.assert:
+    that:
+      - common_ssh_allow_groups | length == 0 or ansible_user in (common_admin_users | map(attribute='name') | list)
+    fail_msg: >-
+      ansible_user '{{ ansible_user | default('undefined') }}' is not listed in common_admin_users.
+      Applying AllowGroups would lock you out.
+    quiet: true
+  when: ansible_connection | default('ssh') in ['ssh', 'smart', 'paramiko']

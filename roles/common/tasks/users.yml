@@ -1,0 +1,52 @@
+---
+- name: Ensure SSH access groups exist
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+    system: true
+  loop: "{{ common_ssh_allow_groups }}"
+
+# '*' instead of '!' when no hash is given: with '!' some sshd builds treat
+# the account as locked and refuse even public key logins.
+- name: Manage admin user accounts
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    comment: "{{ item.comment | default(omit) }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    groups: "{{ common_admin_groups + common_ssh_allow_groups }}"
+    append: true
+    password: "{{ item.password_hash | default('*') }}"
+    update_password: always
+    create_home: true
+    state: "{{ item.state | default('present') }}"
+    remove: "{{ item.state | default('present') == 'absent' }}"
+  loop: "{{ common_admin_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Install authorized SSH keys (exclusive)
+  ansible.posix.authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ item.ssh_keys | join('\n') }}"
+    exclusive: true
+    state: present
+  loop: "{{ common_admin_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.state | default('present') == 'present'
+
+- name: Configure passwordless sudo for admin users
+  ansible.builtin.template:
+    src: sudoers.j2
+    dest: /etc/sudoers.d/90-homelab-admins
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+  when: common_sudo_nopasswd
+
+- name: Remove passwordless sudo when it is disabled
+  ansible.builtin.file:
+    path: /etc/sudoers.d/90-homelab-admins
+    state: absent
+  when: not common_sudo_nopasswd

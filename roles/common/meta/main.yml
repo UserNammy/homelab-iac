@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: common
+  namespace: homelab
+  author: UserNam
+  description: Baseline for every host - admin users, SSH hardening, ufw, fail2ban and unattended-upgrades.
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - noble
+  galaxy_tags:
+    - security
+    - hardening
+    - ssh
+    - firewall
+
+dependencies: []

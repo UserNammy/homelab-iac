@@ -1,0 +1,54 @@
+---
+# --- Packages and system -----------------------------------------------------
+common_base_packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - htop
+  - jq
+  - openssh-server
+  - sudo
+  - tzdata
+  - vim-tiny
+common_timezone: Etc/UTC
+
+# --- Users -------------------------------------------------------------------
+# Each item: { name, comment?, shell?, password_hash?, ssh_keys: [], state? }
+# Without password_hash the account has no usable password (key-only login).
+common_admin_users: []
+# Group that grants sudo on Debian/Ubuntu.
+common_admin_groups:
+  - sudo
+common_sudo_nopasswd: false
+
+# --- SSH ---------------------------------------------------------------------
+common_ssh_service_name: ssh
+common_ssh_port: 22
+common_ssh_permit_root_login: "no"
+common_ssh_password_authentication: false
+common_ssh_max_auth_tries: 3
+# Only members of these groups may log in. Empty list = no restriction.
+common_ssh_allow_groups:
+  - sshusers
+
+# --- Firewall (ufw) ----------------------------------------------------------
+common_ufw_enabled: true
+common_ufw_logging: low
+common_ufw_allowed_ssh_sources:
+  - any
+# Extra rules: { port, proto?, rule?, from_ip?, comment? }
+common_ufw_rules: []
+
+# --- fail2ban ----------------------------------------------------------------
+common_fail2ban_bantime: 1h
+common_fail2ban_findtime: 10m
+common_fail2ban_maxretry: 5
+common_fail2ban_ignoreip:
+  - 127.0.0.1/8
+  - "::1"
+
+# --- unattended-upgrades -----------------------------------------------------
+common_unattended_upgrades_auto_reboot: false
+common_unattended_upgrades_reboot_time: "04:00"
+# Leave empty to disable mail reports (needs a working MTA).
+common_unattended_upgrades_mail: ""

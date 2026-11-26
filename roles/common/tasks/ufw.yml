@@ -1,0 +1,42 @@
+---
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+# Rules are added before ufw is enabled so an SSH session is never cut.
+- name: Deny incoming traffic by default
+  community.general.ufw:
+    direction: incoming
+    default: deny
+
+- name: Allow outgoing traffic by default
+  community.general.ufw:
+    direction: outgoing
+    default: allow
+
+- name: Allow SSH from trusted sources (rate limited)
+  community.general.ufw:
+    rule: limit
+    port: "{{ common_ssh_port | string }}"
+    proto: tcp
+    from_ip: "{{ item }}"
+    comment: SSH
+  loop: "{{ common_ufw_allowed_ssh_sources }}"
+
+- name: Apply host specific firewall rules
+  community.general.ufw:
+    rule: "{{ item.rule | default('allow') }}"
+    port: "{{ item.port | string }}"
+    proto: "{{ item.proto | default('tcp') }}"
+    from_ip: "{{ item.from_ip | default('any') }}"
+    comment: "{{ item.comment | default(omit) }}"
+  loop: "{{ common_ufw_rules }}"
+  loop_control:
+    label: "{{ item.port }}/{{ item.proto | default('tcp') }} from {{ item.from_ip | default('any') }}"
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+    logging: "{{ common_ufw_logging }}"
+  when: common_ufw_enabled

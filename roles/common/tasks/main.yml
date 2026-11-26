@@ -1,0 +1,28 @@
+---
+- name: Run pre-flight checks
+  ansible.builtin.import_tasks: preflight.yml
+  tags: [common, preflight]
+
+- name: Install base packages and set the timezone
+  ansible.builtin.import_tasks: system.yml
+  tags: [common, packages]
+
+- name: Manage admin users
+  ansible.builtin.import_tasks: users.yml
+  tags: [common, users]
+
+- name: Harden the SSH daemon
+  ansible.builtin.import_tasks: ssh.yml
+  tags: [common, ssh]
+
+- name: Configure the ufw firewall
+  ansible.builtin.import_tasks: ufw.yml
+  tags: [common, firewall]
+
+- name: Configure fail2ban
+  ansible.builtin.import_tasks: fail2ban.yml
+  tags: [common, fail2ban]
+
+- name: Configure unattended-upgrades
+  ansible.builtin.import_tasks: unattended_upgrades.yml
+  tags: [common, updates]

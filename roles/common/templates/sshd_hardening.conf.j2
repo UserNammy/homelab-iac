@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+Port {{ common_ssh_port }}
+PermitRootLogin {{ common_ssh_permit_root_login }}
+PasswordAuthentication {{ 'yes' if common_ssh_password_authentication else 'no' }}
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+PermitEmptyPasswords no
+MaxAuthTries {{ common_ssh_max_auth_tries }}
+LoginGraceTime 30
+X11Forwarding no
+AllowAgentForwarding no
+# Local forwarding stays on for `ssh -L` tunnels to Prometheus/Alertmanager.
+AllowTcpForwarding local
+ClientAliveInterval 300
+ClientAliveCountMax 2
+{% if common_ssh_allow_groups | length > 0 %}
+AllowGroups {{ common_ssh_allow_groups | join(' ') }}
+{% endif %}
