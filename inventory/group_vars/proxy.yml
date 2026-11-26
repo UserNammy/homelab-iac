@@ -1,0 +1,21 @@
+---
+# --- reverse_proxy role (Traefik) --------------------------------------------
+reverse_proxy_domain: "{{ homelab_domain }}"
+reverse_proxy_acme_email: admin@example.com
+# DNS-01 lets Traefik get a wildcard certificate without opening port 80 to
+# the internet, which suits a lab that is only reachable from the LAN/VPN.
+reverse_proxy_acme_challenge: dns
+reverse_proxy_dns_provider: cloudflare
+reverse_proxy_dns_provider_env:
+  CF_DNS_API_TOKEN: "{{ vault_cloudflare_dns_api_token }}"
+# Switch to false once the staging certificate is issued correctly.
+reverse_proxy_acme_staging: true
+
+reverse_proxy_dashboard_users:
+  - "admin:{{ vault_traefik_dashboard_htpasswd }}"
+
+# Services that run on other hosts and are reached over the LAN.
+reverse_proxy_external_services:
+  - name: grafana
+    host: "grafana.{{ homelab_domain }}"
+    url: "http://{{ hostvars['mon01']['ansible_host'] }}:3000"

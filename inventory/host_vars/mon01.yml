@@ -1,0 +1,11 @@
+---
+# mon01: Prometheus, Alertmanager, Grafana, Loki.
+
+services_stacks:
+  - monitoring
+
+# Metrics and logs are treated as disposable: only configuration is backed
+# up. Dashboards and datasources are provisioned from this repository.
+backup_paths:
+  - /etc
+  - /opt/stacks

@@ -1,0 +1,46 @@
+---
+# Variables shared by every host. Secrets live in vault.yml next to this file
+# (see inventory/vault.example.yml) and are only referenced here as vault_*.
+
+# --- Connection -------------------------------------------------------------
+ansible_user: ops
+ansible_become_password: "{{ vault_become_password }}"
+
+# --- Lab-wide settings ------------------------------------------------------
+homelab_domain: lab.example.com
+homelab_lan_cidr: 192.168.10.0/24
+homelab_timezone: Europe/Paris
+# Address pool handed to Docker for bridge networks. Pinned so it never
+# collides with the LAN or a VPN range, and so firewall rules can reference it.
+homelab_docker_address_pool: 172.30.0.0/16
+
+# --- common role -------------------------------------------------------------
+common_timezone: "{{ homelab_timezone }}"
+common_admin_users:
+  - name: ops
+    comment: Homelab operator
+    password_hash: "{{ vault_admin_password_hash }}"
+    ssh_keys:
+      # Replace with your own public key.
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleExampleExampleExampleExampleExample ops@workstation
+common_ssh_allow_groups:
+  - sshusers
+common_ufw_allowed_ssh_sources:
+  - "{{ homelab_lan_cidr }}"
+
+# --- monitoring role (node_exporter) -----------------------------------------
+# Defined here rather than only in role defaults because the Prometheus
+# config template on the monitoring server reads it for every host.
+monitoring_node_exporter_port: 9100
+monitoring_node_exporter_allowed_sources: >-
+  {{ groups['monitoring_server'] | map('extract', hostvars, 'ansible_host') | list
+     + [homelab_docker_address_pool] }}
+
+# --- backup role (restic) ----------------------------------------------------
+# One repository per host inside the same bucket: a compromised host cannot
+# list or prune the snapshots of the others if you also scope the S3 keys.
+backup_restic_repository: "s3:https://s3.eu-central-003.backblazeb2.com/homelab-restic/{{ inventory_hostname }}"
+backup_restic_password: "{{ vault_backup_restic_password }}"
+backup_s3_access_key_id: "{{ vault_backup_s3_access_key_id }}"
+backup_s3_secret_access_key: "{{ vault_backup_s3_secret_access_key }}"
+backup_healthcheck_url: "{{ vault_backup_healthcheck_url | default('') }}"

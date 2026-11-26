@@ -1,0 +1,40 @@
+---
+# Template for inventory/group_vars/all/vault.yml.
+#
+#   cp inventory/vault.example.yml inventory/group_vars/all/vault.yml
+#   $EDITOR inventory/group_vars/all/vault.yml
+#   ansible-vault encrypt inventory/group_vars/all/vault.yml
+#
+# The real file is git-ignored. This one only contains placeholders and is
+# kept outside group_vars/ so Ansible never loads it by accident.
+
+# sudo password of the admin user (used as ansible_become_password).
+vault_become_password: "CHANGE_ME"
+
+# SHA-512 crypt hash of the same password, for the user module.
+#   mkpasswd --method=sha-512
+vault_admin_password_hash: "$6$CHANGE_ME$CHANGE_ME"
+
+# --- restic / S3 -------------------------------------------------------------
+# Losing this password means losing every backup. Store a copy offline.
+#   openssl rand -base64 32
+vault_backup_restic_password: "CHANGE_ME"
+vault_backup_s3_access_key_id: "CHANGE_ME"
+vault_backup_s3_secret_access_key: "CHANGE_ME"
+# Optional dead man's switch (healthchecks.io or self-hosted).
+vault_backup_healthcheck_url: ""
+
+# --- Traefik -----------------------------------------------------------------
+# Cloudflare API token with Zone:DNS:Edit on the lab zone only.
+vault_cloudflare_dns_api_token: "CHANGE_ME"
+# htpasswd hash for the dashboard (bcrypt):
+#   htpasswd -nbB admin 'password' | cut -d: -f2
+vault_traefik_dashboard_htpasswd: "$2y$05$CHANGE_ME"
+
+# --- Applications ------------------------------------------------------------
+vault_grafana_admin_password: "CHANGE_ME"
+# Argon2 PHC string, generate with:
+#   docker run --rm -it vaultwarden/server /vaultwarden hash
+vault_vaultwarden_admin_token: "CHANGE_ME"
+# Leave empty to disable alert notifications.
+vault_alertmanager_discord_webhook_url: ""

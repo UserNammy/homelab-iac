@@ -1,0 +1,13 @@
+---
+# --- docker role -------------------------------------------------------------
+# Members of the docker group are effectively root on the host.
+docker_users:
+  - ops
+docker_default_address_pool: "{{ homelab_docker_address_pool }}"
+
+# --- services role -----------------------------------------------------------
+# Values consumed by the templates under services/<stack>/.
+services_domain: "{{ homelab_domain }}"
+services_grafana_admin_password: "{{ vault_grafana_admin_password }}"
+services_vaultwarden_admin_token: "{{ vault_vaultwarden_admin_token }}"
+services_alertmanager_discord_webhook_url: "{{ vault_alertmanager_discord_webhook_url | default('') }}"

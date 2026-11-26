@@ -1,0 +1,22 @@
+---
+# edge01: Traefik, Vaultwarden, Uptime Kuma.
+
+common_ufw_rules:
+  - { port: "80", proto: tcp, comment: "HTTP (redirects to HTTPS)" }
+  - { port: "443", proto: tcp, comment: "HTTPS via Traefik" }
+
+services_stacks:
+  - uptime-kuma
+  - vaultwarden
+
+# Both apps use SQLite. Take an online, consistent copy before restic runs so
+# the snapshot never contains a half-written database.
+backup_extra_packages:
+  - sqlite3
+backup_pre_commands:
+  - sqlite3 /opt/stacks/vaultwarden/data/db.sqlite3 ".backup '/opt/stacks/vaultwarden/data/db-backup.sqlite3'"
+  - sqlite3 /opt/stacks/uptime-kuma/data/kuma.db ".backup '/opt/stacks/uptime-kuma/data/kuma-backup.db'"
+backup_paths:
+  - /etc
+  - /opt/stacks
+  - /opt/traefik
