@@ -1,0 +1,36 @@
+---
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# Distro packages that conflict with Docker's official repository.
+docker_conflicting_packages:
+  - docker.io
+  - docker-doc
+  - docker-compose
+  - podman-docker
+  - containerd
+  - runc
+
+docker_repo_channel: stable
+
+# Users added to the docker group. Being in this group is root-equivalent.
+docker_users: []
+
+# Address pool for user-defined bridge networks (compose projects).
+# Rendered into daemon.json as "default-address-pools".
+docker_default_address_pool: 172.30.0.0/16
+docker_default_address_pool_size: 24
+
+# Written to /etc/docker/daemon.json. log-opts values must be strings.
+docker_daemon_options:
+  log-driver: local
+  log-opts:
+    max-size: 10m
+    max-file: "5"
+  # Containers keep running while dockerd restarts (engine upgrades).
+  live-restore: true
+  userland-proxy: false

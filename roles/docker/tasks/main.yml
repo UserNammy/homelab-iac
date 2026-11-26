@@ -1,0 +1,70 @@
+---
+- name: Remove conflicting distribution packages
+  ansible.builtin.apt:
+    name: "{{ docker_conflicting_packages }}"
+    state: absent
+
+- name: Install repository prerequisites
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Add the Docker apt repository
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: "https://download.docker.com/linux/{{ docker_repo_distribution }}"
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: "{{ docker_repo_channel }}"
+    architectures: "{{ docker_apt_arch }}"
+    signed_by: "https://download.docker.com/linux/{{ docker_repo_distribution }}/gpg"
+    state: present
+  register: docker_repo
+
+- name: Refresh the apt cache after adding the repository
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_repo is changed
+
+- name: Install Docker Engine and the compose plugin
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+
+- name: Ensure /etc/docker exists
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure the Docker daemon
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker
+
+- name: Ensure Docker is enabled and running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add users to the docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: "{{ docker_users }}"
+
+# Apply a changed daemon.json before the stacks are deployed.
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

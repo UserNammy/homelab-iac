@@ -1,0 +1,6 @@
+---
+# Thanks to live-restore, running containers survive this restart.
+- name: Restart docker
+  ansible.builtin.service:
+    name: docker
+    state: restarted

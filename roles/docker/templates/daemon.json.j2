@@ -1,0 +1,3 @@
+{#- Built in one expression so that "size" stays an integer in the JSON. -#}
+{%- set pools = {'default-address-pools': [{'base': docker_default_address_pool, 'size': docker_default_address_pool_size | int}]} -%}
+{{ docker_daemon_options | combine(pools) | to_nice_json(indent=2) }}

@@ -1,0 +1,8 @@
+---
+# Debian architecture names used by download.docker.com.
+docker_apt_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+  armv7l: armhf
+docker_apt_arch: "{{ docker_apt_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"
+docker_repo_distribution: "{{ ansible_facts['distribution'] | lower }}"

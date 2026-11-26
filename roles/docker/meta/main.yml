@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: docker
+  namespace: homelab
+  author: UserNam
+  description: Docker Engine and the compose plugin from the official Docker apt repository.
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - noble
+  galaxy_tags:
+    - docker
+    - containers
+
+dependencies: []
