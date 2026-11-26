@@ -1,0 +1,40 @@
+---
+# Full convergence of the lab:  ansible-playbook site.yml
+# One layer only:               ansible-playbook site.yml --tags backup
+
+- name: Apply the baseline to every host
+  hosts: homelab
+  become: true
+  roles:
+    - role: common
+      tags: [common]
+    - role: monitoring
+      tags: [monitoring, node_exporter]
+
+- name: Install Docker
+  hosts: docker_hosts
+  become: true
+  roles:
+    - role: docker
+      tags: [docker]
+
+- name: Deploy the reverse proxy
+  hosts: proxy
+  become: true
+  roles:
+    - role: reverse_proxy
+      tags: [reverse_proxy, traefik]
+
+- name: Deploy the service stacks
+  hosts: docker_hosts
+  become: true
+  roles:
+    - role: services
+      tags: [services]
+
+- name: Configure backups
+  hosts: homelab
+  become: true
+  roles:
+    - role: backup
+      tags: [backup]
