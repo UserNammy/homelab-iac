@@ -1,0 +1,21 @@
+---
+# Metrics written by /usr/local/sbin/restic-backup through the node_exporter
+# textfile collector (see roles/backup).
+groups:
+  - name: backup
+    rules:
+      - alert: ResticBackupTooOld
+        expr: time() - restic_backup_last_success_timestamp_seconds > 36 * 3600
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No successful restic backup on {{ $labels.instance }} for more than 36h"
+
+      - alert: ResticBackupNeverSucceeded
+        expr: up{job="node"} == 1 unless on (instance) restic_backup_last_success_timestamp_seconds
+        for: 26h
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.instance }} has never reported a successful restic backup"

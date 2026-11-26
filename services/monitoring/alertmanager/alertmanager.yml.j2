@@ -1,0 +1,24 @@
+---
+# {{ ansible_managed }}
+route:
+  receiver: {{ 'discord' if services_alertmanager_discord_webhook_url | length > 0 else 'blackhole' }}
+  group_by: ["alertname", "instance"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  # Used when no notification channel is configured.
+  - name: blackhole
+{% if services_alertmanager_discord_webhook_url | length > 0 %}
+  - name: discord
+    discord_configs:
+      - webhook_url: "{{ services_alertmanager_discord_webhook_url }}"
+        send_resolved: true
+{% endif %}
+
+inhibit_rules:
+  # A host that is down should not also page for its disk or CPU.
+  - source_matchers: ['severity="critical"']
+    target_matchers: ['severity="warning"']
+    equal: ["instance"]

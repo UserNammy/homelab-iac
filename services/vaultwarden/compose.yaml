@@ -1,0 +1,34 @@
+---
+# Bitwarden-compatible password manager. Only reachable from the LAN/VPN
+# (lan-only middleware). SQLite lives in ./data; the backup role takes an
+# online copy with `sqlite3 .backup` before every restic run.
+name: vaultwarden
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.33.2
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      DOMAIN: "https://vault.${LAB_DOMAIN}"
+      SIGNUPS_ALLOWED: "false"
+      INVITATIONS_ALLOWED: "true"
+      SHOW_PASSWORD_HINT: "false"
+      ADMIN_TOKEN: "${VAULTWARDEN_ADMIN_TOKEN}"
+      LOG_LEVEL: warn
+    volumes:
+      - ./data:/data
+    networks:
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.vaultwarden.rule: "Host(`vault.${LAB_DOMAIN}`)"
+      traefik.http.routers.vaultwarden.entrypoints: websecure
+      traefik.http.routers.vaultwarden.middlewares: lan-only@file
+      traefik.http.services.vaultwarden.loadbalancer.server.port: "80"
+
+networks:
+  proxy:
+    external: true
