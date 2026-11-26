@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: backup
+  namespace: homelab
+  author: UserNam
+  description: Nightly restic backups to an S3-compatible bucket, driven by systemd timers, with Prometheus metrics.
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - noble
+  galaxy_tags:
+    - backup
+    - restic
+    - s3
+
+dependencies: []

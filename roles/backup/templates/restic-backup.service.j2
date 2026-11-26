@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Restic backup to S3-compatible storage
+Documentation=https://restic.readthedocs.io
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/restic-backup
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=6h

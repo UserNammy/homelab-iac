@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+#
+# Nightly restic backup, started by restic-backup.timer.
+# Manual run:  sudo systemctl start restic-backup.service
+# Logs:        journalctl -u restic-backup.service
+set -Eeuo pipefail
+
+set -a
+# shellcheck disable=SC1091
+source {{ backup_config_dir }}/restic.env
+set +a
+
+TEXTFILE_DIR="{{ backup_textfile_dir }}"
+HEALTHCHECK_URL="{{ backup_healthcheck_url }}"
+START=$(date +%s)
+
+log() { printf '[restic-backup] %s\n' "$*"; }
+
+# $1: "" on success, "/start" or "/fail"
+ping_healthcheck() {
+  [[ -n "${HEALTHCHECK_URL}" ]] || return 0
+  curl -fsS -m 10 --retry 3 -o /dev/null "${HEALTHCHECK_URL}$1" || log "healthcheck ping failed"
+}
+
+on_error() {
+  log "backup FAILED at line $1"
+  ping_healthcheck /fail
+}
+trap 'on_error $LINENO' ERR
+
+ping_healthcheck /start
+
+{% if backup_pre_commands | length > 0 %}
+log "running pre-backup commands"
+{% for command in backup_pre_commands %}
+{{ command }}
+{% endfor %}
+{% endif %}
+
+log "backing up {{ backup_paths | join(' ') }}"
+restic backup \
+  --tag scheduled \
+  --exclude-caches \
+  --exclude-file {{ backup_config_dir }}/excludes \
+  {{ backup_paths | map('quote') | join(' ') }}
+
+log "applying retention policy"
+restic forget --prune \
+  --tag scheduled \
+  --keep-daily {{ backup_keep_daily }} \
+  --keep-weekly {{ backup_keep_weekly }} \
+  --keep-monthly {{ backup_keep_monthly }}
+
+END=$(date +%s)
+
+# Expose the result to Prometheus through the node_exporter textfile
+# collector. Written to a temp file first so a scrape never sees half a file.
+if [[ -d "${TEXTFILE_DIR}" ]]; then
+  TMP=$(mktemp "${TEXTFILE_DIR}/.restic.prom.XXXXXX")
+  cat > "${TMP}" <<EOF
+# HELP restic_backup_last_success_timestamp_seconds Unix time of the last successful backup.
+# TYPE restic_backup_last_success_timestamp_seconds gauge
+restic_backup_last_success_timestamp_seconds ${END}
+# HELP restic_backup_duration_seconds Duration of the last successful backup run.
+# TYPE restic_backup_duration_seconds gauge
+restic_backup_duration_seconds $((END - START))
+EOF
+  chmod 0644 "${TMP}"
+  mv "${TMP}" "${TEXTFILE_DIR}/restic.prom"
+fi
+
+ping_healthcheck ""
+log "backup finished in $((END - START))s"

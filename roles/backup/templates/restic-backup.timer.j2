@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Daily restic backup
+
+[Timer]
+OnCalendar={{ backup_schedule }}
+RandomizedDelaySec={{ backup_randomized_delay }}
+# Run at next boot if the host was off at the scheduled time.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

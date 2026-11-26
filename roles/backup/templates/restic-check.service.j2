@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Restic repository integrity check
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile={{ backup_config_dir }}/restic.env
+# "%" is a specifier in unit files and has to be doubled.
+ExecStart=/usr/bin/restic check --read-data-subset={{ backup_check_read_data_subset | replace('%', '%%') }}
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=6h

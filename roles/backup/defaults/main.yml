@@ -1,0 +1,44 @@
+---
+# --- Repository --------------------------------------------------------------
+# e.g. s3:https://s3.eu-central-003.backblazeb2.com/<bucket>/<host>
+backup_restic_repository: ""
+backup_restic_password: ""
+backup_s3_access_key_id: ""
+backup_s3_secret_access_key: ""
+# Extra variables for the restic environment (AWS_DEFAULT_REGION, ...).
+backup_extra_env: {}
+# Create the repository on first run if it does not exist yet.
+backup_init_repository: true
+
+# --- What to back up ---------------------------------------------------------
+backup_paths:
+  - /etc
+backup_excludes:
+  # Already in the vault, and the repository password has no business in
+  # the repository it protects.
+  - /etc/restic
+  - "*.tmp"
+  - "*.swp"
+# Shell commands run before every backup (database dumps, ...).
+backup_pre_commands: []
+# Packages needed by the pre-commands (sqlite3, postgresql-client, ...).
+backup_extra_packages: []
+
+# --- Schedule and retention --------------------------------------------------
+backup_schedule: "*-*-* 03:00:00"
+backup_randomized_delay: 30m
+backup_keep_daily: 7
+backup_keep_weekly: 4
+backup_keep_monthly: 6
+# Weekly integrity check reading a random sample of the pack files.
+backup_check_schedule: "Sun *-*-* 05:00:00"
+backup_check_read_data_subset: 5%
+
+# --- Observability -----------------------------------------------------------
+# Optional healthchecks.io style URL (/start and /fail are appended).
+backup_healthcheck_url: ""
+# node_exporter textfile collector directory (monitoring role).
+backup_textfile_dir: /var/lib/node_exporter/textfile
+
+backup_config_dir: /etc/restic
+backup_cache_dir: /var/cache/restic

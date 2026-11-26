@@ -1,0 +1,124 @@
+---
+- name: Validate backup settings
+  ansible.builtin.assert:
+    that:
+      - backup_restic_repository | length > 0
+      - backup_restic_password | length > 0
+      - backup_s3_access_key_id | length > 0
+      - backup_s3_secret_access_key | length > 0
+      - backup_paths | length > 0
+    fail_msg: Repository, password, S3 credentials and at least one path are required.
+    quiet: true
+
+- name: Install restic and helper packages
+  ansible.builtin.apt:
+    name: "{{ ['restic', 'curl'] + backup_extra_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create the restic configuration directory
+  ansible.builtin.file:
+    path: "{{ backup_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Create the restic cache directory
+  ansible.builtin.file:
+    path: "{{ backup_cache_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Write the repository password
+  ansible.builtin.copy:
+    content: "{{ backup_restic_password }}"
+    dest: "{{ backup_config_dir }}/password"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Write the restic environment file
+  ansible.builtin.template:
+    src: restic.env.j2
+    dest: "{{ backup_config_dir }}/restic.env"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Write the exclude list
+  ansible.builtin.template:
+    src: excludes.j2
+    dest: "{{ backup_config_dir }}/excludes"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the backup script
+  ansible.builtin.template:
+    src: restic-backup.sh.j2
+    dest: /usr/local/sbin/restic-backup
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Install the systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - restic-backup.service
+    - restic-backup.timer
+    - restic-check.service
+    - restic-check.timer
+  notify: Reload systemd
+
+- name: Flush handlers so systemd knows the new units
+  ansible.builtin.meta: flush_handlers
+
+# `restic cat config` exits 10 (restic >= 0.17) or prints "Is there a
+# repository" (older releases) when the repository does not exist yet. Any
+# other failure (wrong password, network) must stop the play, not trigger an
+# init over an existing repository.
+- name: Check whether the restic repository exists
+  ansible.builtin.command: restic cat config
+  environment: "{{ backup_restic_env }}"
+  register: backup_repo_check
+  changed_when: false
+  failed_when: false
+  when: backup_init_repository
+
+- name: Initialise the restic repository
+  ansible.builtin.command: restic init
+  environment: "{{ backup_restic_env }}"
+  changed_when: true
+  when:
+    - backup_init_repository
+    - backup_repo_check.rc != 0
+    - backup_repo_check.rc == 10 or 'Is there a repository at the following location' in backup_repo_check.stderr
+
+- name: Fail on unexpected repository errors
+  ansible.builtin.fail:
+    msg: "restic cat config failed: {{ backup_repo_check.stderr | default('') }}"
+  when:
+    - backup_init_repository
+    - backup_repo_check.rc != 0
+    - backup_repo_check.rc != 10
+    - "'Is there a repository at the following location' not in backup_repo_check.stderr"
+
+- name: Enable the backup and check timers
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - restic-backup.timer
+    - restic-check.timer

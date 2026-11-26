@@ -1,0 +1,9 @@
+---
+# Environment shared by restic.env (script + systemd) and the init tasks.
+backup_restic_base_env:
+  RESTIC_REPOSITORY: "{{ backup_restic_repository }}"
+  RESTIC_PASSWORD_FILE: "{{ backup_config_dir }}/password"
+  RESTIC_CACHE_DIR: "{{ backup_cache_dir }}"
+  AWS_ACCESS_KEY_ID: "{{ backup_s3_access_key_id }}"
+  AWS_SECRET_ACCESS_KEY: "{{ backup_s3_secret_access_key }}"
+backup_restic_env: "{{ backup_restic_base_env | combine(backup_extra_env) }}"
