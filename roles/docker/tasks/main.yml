@@ -25,15 +25,11 @@
     state: present
   register: docker_repo
 
-- name: Refresh the apt cache after adding the repository
-  ansible.builtin.apt:
-    update_cache: true
-  when: docker_repo is changed
-
 - name: Install Docker Engine and the compose plugin
   ansible.builtin.apt:
     name: "{{ docker_packages }}"
     state: present
+    update_cache: "{{ docker_repo is changed }}"
 
 - name: Ensure /etc/docker exists
   ansible.builtin.file:
