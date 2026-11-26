@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: common
   namespace: homelab
-  author: UserNam
+  author: Baker MADRASSI
   description: Baseline for every host - admin users, SSH hardening, ufw, fail2ban and unattended-upgrades.
   license: MIT
   min_ansible_version: "2.16"

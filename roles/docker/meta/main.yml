@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: docker
   namespace: homelab
-  author: UserNam
+  author: Baker MADRASSI
   description: Docker Engine and the compose plugin from the official Docker apt repository.
   license: MIT
   min_ansible_version: "2.16"

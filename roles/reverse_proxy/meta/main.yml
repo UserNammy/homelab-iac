@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: reverse_proxy
   namespace: homelab
-  author: UserNam
+  author: Baker MADRASSI
   description: Traefik v3 in Docker with Let's Encrypt (DNS-01 or HTTP-01) behind a Docker socket proxy.
   license: MIT
   min_ansible_version: "2.16"

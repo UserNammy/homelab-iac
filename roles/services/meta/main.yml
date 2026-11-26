@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: services
   namespace: homelab
-  author: UserNam
+  author: Baker MADRASSI
   description: Deploys the docker compose stacks found under services/ to /opt/stacks.
   license: MIT
   min_ansible_version: "2.16"

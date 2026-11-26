@@ -2,7 +2,7 @@
 galaxy_info:
   role_name: backup
   namespace: homelab
-  author: UserNam
+  author: Baker MADRASSI
   description: Nightly restic backups to an S3-compatible bucket, driven by systemd timers, with Prometheus metrics.
   license: MIT
   min_ansible_version: "2.16"
