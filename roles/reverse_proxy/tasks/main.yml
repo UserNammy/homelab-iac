@@ -1,0 +1,80 @@
+---
+- name: Validate reverse proxy settings
+  ansible.builtin.assert:
+    that:
+      - reverse_proxy_acme_email | length > 0
+      - reverse_proxy_acme_challenge in ['dns', 'http']
+      - reverse_proxy_acme_challenge == 'http' or reverse_proxy_dns_provider_env | length > 0
+      - not reverse_proxy_dashboard_enabled or reverse_proxy_dashboard_users | length > 0
+    fail_msg: >-
+      Check reverse_proxy_acme_email, the DNS provider credentials and the
+      dashboard users (an unauthenticated dashboard is never deployed).
+    quiet: true
+
+- name: Create the Traefik directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ reverse_proxy_base_dir }}", mode: "0750" }
+    - { path: "{{ reverse_proxy_base_dir }}/dynamic", mode: "0750" }
+    # acme.json holds the private keys of every certificate.
+    - { path: "{{ reverse_proxy_base_dir }}/letsencrypt", mode: "0700" }
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Create the shared proxy network
+  community.docker.docker_network:
+    name: "{{ reverse_proxy_network }}"
+    driver: bridge
+    state: present
+
+- name: Render the Traefik static configuration
+  ansible.builtin.template:
+    src: traefik.yml.j2
+    dest: "{{ reverse_proxy_base_dir }}/traefik.yml"
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Restart traefik
+
+# The file provider watches this directory, no restart needed.
+- name: Render the Traefik dynamic configuration
+  ansible.builtin.template:
+    src: "dynamic/{{ item }}.j2"
+    dest: "{{ reverse_proxy_base_dir }}/dynamic/{{ item }}"
+    owner: root
+    group: root
+    mode: "0640"
+  loop:
+    - middlewares.yml
+    - dashboard.yml
+    - external.yml
+
+- name: Write the DNS provider credentials
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ reverse_proxy_base_dir }}/.env"
+    owner: root
+    group: root
+    mode: "0600"
+  diff: false
+  no_log: true
+
+- name: Render the compose project
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ reverse_proxy_base_dir }}/compose.yaml"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Start Traefik
+  community.docker.docker_compose_v2:
+    project_src: "{{ reverse_proxy_base_dir }}"
+    state: present
+    pull: missing
+    remove_orphans: true

@@ -1,0 +1,53 @@
+---
+# {{ ansible_managed }}
+name: traefik
+
+services:
+  # Traefik never touches the Docker socket directly: this proxy only exposes
+  # the read-only container listing endpoints it needs.
+  socket-proxy:
+    image: {{ reverse_proxy_socket_proxy_image }}
+    container_name: socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: "1"
+      POST: "0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - socket
+    security_opt:
+      - no-new-privileges:true
+
+  traefik:
+    image: {{ reverse_proxy_image }}
+    container_name: traefik
+    restart: unless-stopped
+    depends_on:
+      - socket-proxy
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+      - "443:443"
+      - "{{ reverse_proxy_metrics_listen_address }}:{{ reverse_proxy_metrics_port }}:8082"
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - {{ reverse_proxy_network }}
+      - socket
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  {{ reverse_proxy_network }}:
+    external: true
+  socket:
+    internal: true

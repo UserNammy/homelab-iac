@@ -1,0 +1,27 @@
+---
+# {{ ansible_managed }}
+# Routes to services that live on other hosts of the lab.
+{% if reverse_proxy_external_services | length > 0 %}
+http:
+  routers:
+{% for svc in reverse_proxy_external_services %}
+    {{ svc.name }}:
+      rule: "Host(`{{ svc.host }}`)"
+      entryPoints:
+        - websecure
+      service: {{ svc.name }}
+      middlewares:
+{% for mw in svc.middlewares | default(['lan-only']) %}
+        - {{ mw }}
+{% endfor %}
+      tls:
+        certResolver: letsencrypt
+{% endfor %}
+  services:
+{% for svc in reverse_proxy_external_services %}
+    {{ svc.name }}:
+      loadBalancer:
+        servers:
+          - url: "{{ svc.url }}"
+{% endfor %}
+{% endif %}

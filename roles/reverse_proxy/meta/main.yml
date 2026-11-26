@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: reverse_proxy
+  namespace: homelab
+  author: UserNam
+  description: Traefik v3 in Docker with Let's Encrypt (DNS-01 or HTTP-01) behind a Docker socket proxy.
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - noble
+  galaxy_tags:
+    - traefik
+    - letsencrypt
+    - docker
+
+# Requires the docker role; site.yml orders the plays explicitly instead of
+# declaring a dependency, so docker is not applied twice per run.
+dependencies: []

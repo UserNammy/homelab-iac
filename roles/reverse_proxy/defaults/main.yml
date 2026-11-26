@@ -1,0 +1,45 @@
+---
+# Pin images; bump them deliberately (see roadmap: Renovate).
+reverse_proxy_image: traefik:v3.3
+reverse_proxy_socket_proxy_image: tecnativa/docker-socket-proxy:0.3.0
+
+reverse_proxy_base_dir: /opt/traefik
+# Shared docker network that application stacks join to be routed.
+reverse_proxy_network: proxy
+reverse_proxy_log_level: INFO
+
+# --- TLS / Let's Encrypt -----------------------------------------------------
+reverse_proxy_domain: example.com
+reverse_proxy_acme_email: ""
+# "dns" (wildcard certificate, nothing exposed to the internet) or "http".
+reverse_proxy_acme_challenge: dns
+reverse_proxy_acme_staging: false
+# Any lego provider name: https://go-acme.github.io/lego/dns/
+reverse_proxy_dns_provider: cloudflare
+# Credentials for the DNS provider, written to a 0600 .env file.
+reverse_proxy_dns_provider_env: {}
+reverse_proxy_dns_resolvers:
+  - "1.1.1.1:53"
+  - "9.9.9.9:53"
+
+# --- Access control ----------------------------------------------------------
+# Source ranges allowed by the "lan-only" middleware.
+reverse_proxy_allowed_cidrs:
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+
+# --- Dashboard ---------------------------------------------------------------
+reverse_proxy_dashboard_enabled: true
+reverse_proxy_dashboard_host: "traefik.{{ reverse_proxy_domain }}"
+# htpasswd entries ("user:bcrypt-hash"). Keep the hashes in the vault.
+reverse_proxy_dashboard_users: []
+
+# --- Metrics -----------------------------------------------------------------
+# Published on the LAN address so Prometheus on another host can scrape it.
+reverse_proxy_metrics_listen_address: "{{ ansible_facts['default_ipv4']['address'] | default('127.0.0.1') }}"
+reverse_proxy_metrics_port: 8082
+
+# --- Services on other hosts -------------------------------------------------
+# Each item: { name, host, url, middlewares? }
+reverse_proxy_external_services: []

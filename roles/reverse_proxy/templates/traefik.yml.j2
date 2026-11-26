@@ -1,0 +1,73 @@
+---
+# {{ ansible_managed }}
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: {{ reverse_proxy_log_level }}
+
+accessLog: {}
+
+api:
+  dashboard: {{ reverse_proxy_dashboard_enabled | bool | lower }}
+
+# Used by the container healthcheck.
+ping: {}
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+    http:
+      middlewares:
+        - secure-headers@file
+      tls:
+        certResolver: letsencrypt
+{% if reverse_proxy_acme_challenge == 'dns' %}
+        domains:
+          - main: "{{ reverse_proxy_domain }}"
+            sans:
+              - "*.{{ reverse_proxy_domain }}"
+{% endif %}
+  metrics:
+    address: ":8082"
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+
+providers:
+  docker:
+    endpoint: "tcp://socket-proxy:2375"
+    exposedByDefault: false
+    network: {{ reverse_proxy_network }}
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "{{ reverse_proxy_acme_email }}"
+      storage: /letsencrypt/acme.json
+{% if reverse_proxy_acme_staging %}
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+{% endif %}
+{% if reverse_proxy_acme_challenge == 'dns' %}
+      dnsChallenge:
+        provider: {{ reverse_proxy_dns_provider }}
+        resolvers:
+{% for resolver in reverse_proxy_dns_resolvers %}
+          - "{{ resolver }}"
+{% endfor %}
+{% else %}
+      httpChallenge:
+        entryPoint: web
+{% endif %}

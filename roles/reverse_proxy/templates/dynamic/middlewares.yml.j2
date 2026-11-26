@@ -1,0 +1,27 @@
+---
+# {{ ansible_managed }}
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: same-origin
+
+    lan-only:
+      ipAllowList:
+        sourceRange:
+{% for cidr in reverse_proxy_allowed_cidrs %}
+          - "{{ cidr }}"
+{% endfor %}
+{% if reverse_proxy_dashboard_users | length > 0 %}
+
+    dashboard-auth:
+      basicAuth:
+        users:
+{% for user in reverse_proxy_dashboard_users %}
+          - "{{ user }}"
+{% endfor %}
+{% endif %}
